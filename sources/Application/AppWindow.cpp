@@ -37,6 +37,8 @@ GUIColor AppWindow::columnTitleColor_(0xA5, 0x5B, 0x8F);
 
 int AppWindow::charWidth_ = 8;
 int AppWindow::charHeight_ = 8;
+int AppWindow::cols_ = 40;
+int AppWindow::rows_ = 30;
 
 // #define _FORCE_SDL_EVENT_
 
@@ -70,6 +72,20 @@ void AppWindow::defineColor(const char *colorName, GUIColor &color) {
 AppWindow::AppWindow(I_GUIWindowImp &imp) : GUIWindow(imp) {
 
     instance = this;
+
+    // Grid size must be settled before ANYTHING draws: _charScreen is indexed
+    // as x + cols_ * y, so a view or the project-selection modal drawing while
+    // cols_ still held its default would write at the wrong stride and leave
+    // stale cells that the _preScreen diff then never repaints.
+    GUIRect windowRect = GetRect();
+    cols_ = windowRect.Width() / charWidth_;
+    rows_ = windowRect.Height() / charHeight_;
+    if (cols_ > APPWINDOW_MAX_COLS) cols_ = APPWINDOW_MAX_COLS;
+    if (rows_ > APPWINDOW_MAX_ROWS) rows_ = APPWINDOW_MAX_ROWS;
+    memset(_charScreen, ' ', cols_ * rows_);
+    memset(_preScreen, ' ', cols_ * rows_);
+    memset(_charScreenProp, 0, cols_ * rows_);
+    memset(_preScreenProp, 0, cols_ * rows_);
 
     // Init all members
 
@@ -142,10 +158,10 @@ AppWindow::AppWindow(I_GUIWindowImp &imp) : GUIWindow(imp) {
         _currentView->DoModal(spd, ProjectSelectCallback);
     }
 
-    memset(_charScreen, ' ', 1200);
-    memset(_preScreen, ' ', 1200);
-    memset(_charScreenProp, 0, 1200);
-    memset(_preScreenProp, 0, 1200);
+    memset(_charScreen, ' ', cols_ * rows_);
+    memset(_preScreen, ' ', cols_ * rows_);
+    memset(_charScreenProp, 0, cols_ * rows_);
+    memset(_preScreenProp, 0, cols_ * rows_);
 
     Redraw();
 };
@@ -155,30 +171,33 @@ AppWindow::~AppWindow() { MidiService::GetInstance()->Close(); }
 void AppWindow::DrawString(const char *string, GUIPoint &pos,
                            GUITextProperties &props, bool force) {
 
-    // we know we don't have mode than 40 chars
-
-    char buffer[41];
+    char buffer[APPWINDOW_MAX_COLS + 1];
     int len = strlen(string);
     int offset = (pos._x < 0) ? -pos._x / 8 : 0;
     len -= offset;
-    int available = 40 - ((pos._x < 0) ? 0 : pos._x);
+    int available = cols_ - ((pos._x < 0) ? 0 : pos._x);
     len = MIN(len, available);
+    // A string starting past the right edge clips to nothing rather than
+    // memcpy'ing a negative length.
+    if (len < 0) {
+        len = 0;
+    }
     memcpy(buffer, string + offset, len);
     buffer[len] = 0;
 
-    NAssert((pos._x < 40) && (pos._y < 30));
-    int index = pos._x + 40 * pos._y;
+    NAssert((pos._x < cols_) && (pos._y < rows_));
+    int index = pos._x + cols_ * pos._y;
     memcpy(_charScreen + index, buffer, len);
     unsigned char prop = colorIndex_ + (props.invert_ ? PROP_INVERT : 0);
     memset(_charScreenProp + index, prop, len);
 };
 
 void AppWindow::Clear(bool all) {
-    memset(_charScreen, ' ', 1200);
-    memset(_charScreenProp, 0, 1200);
+    memset(_charScreen, ' ', cols_ * rows_);
+    memset(_charScreenProp, 0, cols_ * rows_);
     if (all) {
-        memset(_preScreen, ' ', 1200);
-        memset(_preScreenProp, 0, 1200);
+        memset(_preScreen, ' ', cols_ * rows_);
+        memset(_preScreenProp, 0, cols_ * rows_);
     };
 };
 
@@ -189,15 +208,15 @@ void AppWindow::ClearRect(GUIRect &r) {
     int w = r.Width();
     int h = r.Height();
 
-    unsigned char *st = _charScreen + x + (40 * y);
-    unsigned char *pr = _charScreenProp + x + (40 * y);
+    unsigned char *st = _charScreen + x + (cols_ * y);
+    unsigned char *pr = _charScreenProp + x + (cols_ * y);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
             *st++ = ' ';
             *pr++ = 0;
         }
-        st += (40 - w);
-        pr += (40 - w);
+        st += (cols_ - w);
+        pr += (cols_ - w);
     }
 };
 
@@ -239,8 +258,8 @@ void AppWindow::Flush() {
     unsigned char *previous = _preScreen;
     unsigned char *currentProp = _charScreenProp;
     unsigned char *previousProp = _preScreenProp;
-    for (int y = 0; y < 30; y++) {
-        for (int x = 0; x < 40; x++) {
+    for (int y = 0; y < rows_; y++) {
+        for (int x = 0; x < cols_; x++) {
 #ifndef _LGPT_NO_SCREEN_CACHE_
             if ((*current != *previous) || (*currentProp != *previousProp)) {
 #endif
@@ -316,8 +335,8 @@ void AppWindow::Flush() {
     long flushEnd = System::GetInstance()->GetClock();
     GUIWindow::Flush();
     Unlock();
-    memcpy(_preScreen, _charScreen, 1200);
-    memcpy(_preScreenProp, _charScreenProp, 1200);
+    memcpy(_preScreen, _charScreen, cols_ * rows_);
+    memcpy(_preScreenProp, _charScreenProp, cols_ * rows_);
 };
 
 void AppWindow::LoadProject(const Path &p) {
@@ -655,10 +674,10 @@ void AppWindow::Print(char *line) {
     Clear();
     strcpy(_statusLine, line);
     // unwrapped for gcc
-    int position = 40;
+    int position = cols_;
     position -= strlen(_statusLine);
     position /= 2;
-    GUIPoint pos(position, 12);
+    GUIPoint pos(position, rows_ / 2 - 3);
     //
     GUITextProperties props;
     SetColor(CD_NORMAL);
@@ -666,8 +685,8 @@ void AppWindow::Print(char *line) {
     char buildString[80];
     sprintf(buildString, "Piggy build %s.%s.%s", PROJECT_NUMBER,
             PROJECT_RELEASE, BUILD_COUNT);
-    pos._y = 28;
-    pos._x = (40 - strlen(buildString)) / 2;
+    pos._y = rows_ - 2;
+    pos._x = (cols_ - (int)strlen(buildString)) / 2;
     DrawString(buildString, pos, props);
     Flush();
 };

@@ -2,6 +2,14 @@
 #ifndef _APP_WINDOW_H_
 #define _APP_WINDOW_H_
 
+
+// Upper bound on the character grid. 320x240 gives 40x30; a 1024x768 panel
+// driven at 2x gives 64x48. Generous so APPWIDTH/APPHEIGHT can grow without
+// another ABI-ish change here.
+#define APPWINDOW_MAX_COLS 128
+#define APPWINDOW_MAX_ROWS 96
+#define APPWINDOW_MAX_CELLS (APPWINDOW_MAX_COLS * APPWINDOW_MAX_ROWS)
+
 #include "Application/Views/ChainView.h"
 #include "Application/Views/ConsoleView.h"
 #include "Application/Views/GrooveView.h"
@@ -85,10 +93,13 @@ class AppWindow : public GUIWindow, I_Observer, Status {
     unsigned long _lastB;
     char _statusLine[80];
     std::string _newProjectToLoad;
-    unsigned char _charScreen[1200];
-    unsigned char _charScreenProp[1200];
-    unsigned char _preScreen[1200];
-    unsigned char _preScreenProp[1200];
+    // Character screen, diffed against _preScreen so Flush only repaints
+    // cells that actually changed. Sized for the largest grid we allow;
+    // cols_ * rows_ of it is live. Was a fixed 40x30 (1200).
+    unsigned char _charScreen[APPWINDOW_MAX_CELLS];
+    unsigned char _charScreenProp[APPWINDOW_MAX_CELLS];
+    unsigned char _preScreen[APPWINDOW_MAX_CELLS];
+    unsigned char _preScreenProp[APPWINDOW_MAX_CELLS];
 
     static GUIColor backgroundColor_;
     static GUIColor normalColor_;
@@ -109,8 +120,12 @@ class AppWindow : public GUIWindow, I_Observer, Status {
 
     ColorDefinition colorIndex_;
 
+    // Pixel size of one character cell.
     static int charWidth_;
     static int charHeight_;
+    // Size of the character grid, in cells, derived from the window rect.
+    static int cols_;
+    static int rows_;
 
     SysMutex drawMutex_;
 

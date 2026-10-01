@@ -9,6 +9,8 @@
 bool View::initPrivate_=false ;
 
 int View::margin_=0 ;
+int View::gridWidth_=40 ;
+int View::gridHeight_=30 ;
 int View::songRowCount_; //=21 sets screen height among other things
 bool View::miniLayout_=false ;
 int View::altRowNumber_ = 4;
@@ -24,7 +26,15 @@ View::View(GUIWindow &w,ViewData *viewData):
 	   GUIRect rect=w.GetRect() ;
      miniLayout_=(rect.Width()<320);
 	   View::margin_=0 ;
-		songRowCount_ = miniLayout_ ? 16:22; // 22 is row display count among other things
+
+     // The window rect is in virtual pixels; the font cell is 8x8.
+     gridWidth_  = rect.Width()/8 ;
+     gridHeight_ = rect.Height()/8 ;
+
+     // Eight rows go to chrome: title, spacer, column headers and the VU
+     // meters. The rest is song rows. On the classic 30-row grid this is the
+     // 22 it has always been.
+		songRowCount_ = miniLayout_ ? 16 : (gridHeight_-8); // 22 is row display count among other things
 
 		const char *altRowStr = Config::GetInstance()->GetValue("ALTROWNUMBER");
 		if (altRowStr) {
@@ -47,8 +57,8 @@ View::View(GUIWindow &w,ViewData *viewData):
 } ;
 
 GUIPoint View::GetAnchor() {
-	int width=40 ;
-	int height=30 ;
+	int width=View::gridWidth_ ;
+	int height=View::gridHeight_ ;
 	return GUIPoint((width-SONG_CHANNEL_COUNT*3)/2+2,(height-View::songRowCount_)/2) ;
 }
 
@@ -152,8 +162,11 @@ void View::drawNotes() {
     if (!miniLayout_) {
 
 		GUIPoint anchor=GetAnchor() ;
-		int initialX = View::margin_+10 ;
-		int initialY = anchor._y+23 ;
+		// Sit under the channel columns, one row below the last song row.
+		// Was margin_+10 / anchor._y+23, which were the anchor x and
+		// songRowCount_+1 of the fixed 40x30 grid.
+		int initialX = anchor._x ;
+		int initialY = anchor._y+View::songRowCount_+1 ;
 		GUIPoint pos(initialX,initialY) ;
 		GUITextProperties props ;
 

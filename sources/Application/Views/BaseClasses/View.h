@@ -180,6 +180,12 @@ class View : public Observable {
 
   public:
     static int margin_;
+    // Size of the character grid, derived once from the window rect (8x8 font
+    // cell). 40x30 on a classic 320x240 layout. Views lay out against these
+    // rather than hardcoding 40/30, so a larger APPWIDTH/APPHEIGHT shows more
+    // rows and columns instead of just scaling up.
+    static int gridWidth_;
+    static int gridHeight_;
     static int songRowCount_;
     static bool miniLayout_;
     static int altRowNumber_;

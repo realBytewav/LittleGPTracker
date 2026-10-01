@@ -1,5 +1,8 @@
 #include "ModalView.h"
 
+// Upper bound on a modal border run, in characters.
+#define MODAL_MAX_LINE 256
+
 ModalView::ModalView(View &v)
     : View(v.w_, v.viewData_), finished_(false), returnCode_(0){};
 
@@ -27,12 +30,13 @@ void ModalView::SetWindow(int width, int height) {
     if (width > 36) {
         width = 36;
     };
-    if (height > 26) {
-        height = 26;
+    // Leave room for the border and the chrome above/below.
+    if (height > View::gridHeight_ - 4) {
+        height = View::gridHeight_ - 4;
     };
 
-    left_ = 20 - width / 2;
-    top_ = 10 - height / 2;
+    left_ = View::gridWidth_ / 2 - width / 2;
+    top_ = View::gridHeight_ / 3 - height / 2;
     if (top_ < 2) {
         top_ = 2;
     }
@@ -41,9 +45,17 @@ void ModalView::SetWindow(int width, int height) {
     SetColor(CD_BORDER);
     GUITextProperties props;
     props.invert_ = true;
-    char line[41];
-    memset(line, ' ', 40);
-    line[width + 4] = 0;
+    // Border run, at most one grid row wide.
+    int lineLen = View::gridWidth_;
+    if (lineLen > MODAL_MAX_LINE) {
+        lineLen = MODAL_MAX_LINE;
+    }
+    char line[MODAL_MAX_LINE + 1];
+    memset(line, ' ', lineLen);
+    line[lineLen] = 0;
+    if (width + 4 < lineLen) {
+        line[width + 4] = 0;
+    }
     DrawString(-2, -2, line, props);
     DrawString(-2, height + 1, line, props);
     line[1] = 0;
