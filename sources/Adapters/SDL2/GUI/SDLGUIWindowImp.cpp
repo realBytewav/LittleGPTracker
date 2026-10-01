@@ -12,6 +12,11 @@
 
 SDLGUIWindowImp *instance_ ;
 
+// Logical size of the UI, in virtual pixels. The font cell is 8x8, so this is
+// also the character grid: 320x240 is the classic 40x30. Overridable from
+// config.xml (APPWIDTH / APPHEIGHT) so a device with a roomier panel can show
+// more of the song at once instead of just scaling the same 40x30 up. Must
+// stay a multiple of 8 in both axes.
 unsigned short appWidth=320 ;
 unsigned short appHeight=240 ;
 
@@ -19,6 +24,21 @@ SDLGUIWindowImp::SDLGUIWindowImp(GUICreateWindowParams &p)
 {
 
   SDLCreateWindowParams &sdlP=(SDLCreateWindowParams &)p;
+
+  // Must happen before anything below reads appWidth/appHeight.
+  const char *appW=Config::GetInstance()->GetValue("APPWIDTH") ;
+  if (appW)
+  {
+    int v=atoi(appW) ;
+    if (v>=160) appWidth=(unsigned short)(v&~7) ;
+  }
+  const char *appH=Config::GetInstance()->GetValue("APPHEIGHT") ;
+  if (appH)
+  {
+    int v=atoi(appH) ;
+    if (v>=128) appHeight=(unsigned short)(v&~7) ;
+  }
+
   cacheFonts_=sdlP.cacheFonts_ ;
   framebuffer_=sdlP.framebuffer_ ;
   
@@ -47,6 +67,14 @@ SDLGUIWindowImp::SDLGUIWindowImp(GUICreateWindowParams &p)
  #elif defined(RS97)
   int screenWidth = 320; 
   int screenHeight = 240;
+  windowed_ = false;
+ #elif defined(PLATFORM_TG5040)
+  // TrimUI Brick (1024x768) / Smart Pro (1280x720) under NextUI. There is no
+  // window manager, so take the panel's full mode and let appAnchorX_/Y_
+  // centre the scaled 320x240 grid inside it. Left windowed_ true, SDL would
+  // open a 960x720 window on a 1024x768 panel.
+  int screenWidth = displayMode.w;
+  int screenHeight = displayMode.h;
   windowed_ = false;
  #else
   int screenWidth = displayMode.w;
