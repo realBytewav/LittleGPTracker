@@ -13,10 +13,15 @@
 	     DEFAULT (below): 320x240 grid = 40x30 chars at 3x -> 960x720, centred
 	     with a small border. Big, readable text; 22 song rows at a time.
 
-	     DENSE alternative: swap in the three values below for a 512x384 grid =
-	     64x48 chars at 2x -> exactly 1024x768, no border, 40 song rows at a
-	     time. Twice the song visible, but the text is noticeably smaller on a
-	     3.2" screen.
+	     DENSE alternative (TrimUI BRICK ONLY - see warning): swap in the three
+	     values below for a 512x384 grid = 64x48 chars at 2x -> exactly
+	     1024x768, no border, 40 song rows at a time. Twice the song visible,
+	     but the text is noticeably smaller on a 3.2" screen.
+
+	     WARNING: do NOT use dense mode on a TrimUI Smart Pro (1280x720). It
+	     needs a 768-tall surface, so on a 720-tall panel the vertical anchor
+	     goes negative and the top and bottom rows are silently dropped. The
+	     3x default below is correct on every tg5040 device.
 
 	         <APPWIDTH value="512"/>
 	         <APPHEIGHT value="384"/>
