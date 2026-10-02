@@ -3,8 +3,10 @@
 #---------------------------------------------------------------------------------
 # TrimUI Brick / Smart Pro (Allwinner A133p, "tg5040") running NextUI.
 #
-# Built against the NextUI cross toolchain + TrimUI SDK sysroot. Install with
-# tools/setup-toolchain.sh, or point DEVKIT at your own copy:
+# Built against the NextUI cross toolchain plus the TrimUI SDK sysroot, the
+# same pair NextUI's own container image uses. Unpack them into DEVKIT (see
+# the header comment in the other TrimUI makefile for the archive URLs), or
+# point DEVKIT at your own copy:
 #
 #   make PLATFORM=TG5040 DEVKIT=/path/to/aarch64-nextui-linux-gnu
 #---------------------------------------------------------------------------------
@@ -19,9 +21,11 @@ DEFINES := \
 	-D_NO_JACK_ \
 	-DSDL2 \
 	-DSDLAUDIO \
-	-DDUMMYMIDI
+	-DDUMMYMIDI \
+	-DAPPWINDOW_MAX_COLS=64 \
+	-DAPPWINDOW_MAX_ROWS=48
 
-DEVKIT ?= $(HOME)/GitSSD/lgpt-brick/toolchain/aarch64-nextui-linux-gnu
+DEVKIT ?= /opt/tg5040-nextui-toolchain
 TRIPLET := aarch64-nextui-linux-gnu
 CROSS_COMPILE := $(DEVKIT)/bin/$(TRIPLET)-
 

@@ -11,7 +11,9 @@ DEFINES := \
         -DSDLAUDIO \
         -DRTMIDI \
         -DFFMPEG_ENABLED \
-        -D_FEAT_MIDI_LOCK
+        -D_FEAT_MIDI_LOCK \
+        -DAPPWINDOW_MAX_COLS=64 \
+        -DAPPWINDOW_MAX_ROWS=48
 
 ALSA_CFLAGS := $(shell pkg-config alsa --cflags)
 ALSA_LIBS := $(shell pkg-config alsa --libs)

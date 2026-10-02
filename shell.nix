@@ -21,13 +21,31 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
-    export LGPT_DEVKIT="''${LGPT_DEVKIT:-$PWD/../toolchain/aarch64-nextui-linux-gnu}"
-    if [ -x "$LGPT_DEVKIT/bin/aarch64-nextui-linux-gnu-gcc" ]; then
-      echo "tg5040 toolchain: $LGPT_DEVKIT"
-    else
-      echo "tg5040 toolchain NOT found at $LGPT_DEVKIT"
-      echo "  run tools/setup-toolchain.sh, or set LGPT_DEVKIT"
-    fi
-    echo "build: cd projects && make PLATFORM=TG5040 DEVKIT=\$LGPT_DEVKIT"
+    # The makefiles default DEVKIT to /opt (upstream's convention). Locally we
+    # keep the toolchains beside the checkout, so point DEVKIT at whichever one
+    # matches the platform being built. Exported, because DEVKIT uses "?=" and
+    # therefore honours the environment.
+    export LGPT_TG5040_DEVKIT="''${LGPT_TG5040_DEVKIT:-$PWD/../toolchain/aarch64-nextui-linux-gnu}"
+    export LGPT_TG5050_DEVKIT="''${LGPT_TG5050_DEVKIT:-$PWD/../toolchain/tg5050/aarch64-nextui-linux-gnu}"
+
+    lgpt-build() {
+      local plat="''${1:-TG5040}" devkit
+      case "$plat" in
+        TG5040) devkit="$LGPT_TG5040_DEVKIT" ;;
+        TG5050) devkit="$LGPT_TG5050_DEVKIT" ;;
+        *)      devkit="" ;;
+      esac
+      ( cd projects && make PLATFORM="$plat" ''${devkit:+DEVKIT="$devkit"} )
+    }
+
+    for p in TG5040 TG5050; do
+      eval "d=\$LGPT_''${p}_DEVKIT"
+      if [ -x "$d/bin/aarch64-nextui-linux-gnu-gcc" ]; then
+        echo "$p toolchain: $d"
+      else
+        echo "$p toolchain NOT found at $d"
+      fi
+    done
+    echo "build: lgpt-build TG5040   (or TG5050)"
   '';
 }

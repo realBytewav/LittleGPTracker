@@ -3,11 +3,19 @@
 #define _APP_WINDOW_H_
 
 
-// Upper bound on the character grid. 320x240 gives 40x30; a 1024x768 panel
-// driven at 2x gives 64x48. Generous so APPWIDTH/APPHEIGHT can grow without
-// another ABI-ish change here.
-#define APPWINDOW_MAX_COLS 128
-#define APPWINDOW_MAX_ROWS 96
+// Upper bound on the character grid, and with it the size of the four screen
+// buffers below. The default is the classic 40x30, so every existing platform
+// keeps exactly the 1200-cell buffers it has always had. A platform whose
+// panel can usefully show more opts in from its makefile, e.g.
+//   -DAPPWINDOW_MAX_COLS=64 -DAPPWINDOW_MAX_ROWS=48
+// and pays the extra static RAM only there. This matters: AppWindow is in
+// COMMONFILES, so an unconditional bump would land on the NDS and GP32 too.
+#ifndef APPWINDOW_MAX_COLS
+#define APPWINDOW_MAX_COLS 40
+#endif
+#ifndef APPWINDOW_MAX_ROWS
+#define APPWINDOW_MAX_ROWS 30
+#endif
 #define APPWINDOW_MAX_CELLS (APPWINDOW_MAX_COLS * APPWINDOW_MAX_ROWS)
 
 #include "Application/Views/ChainView.h"

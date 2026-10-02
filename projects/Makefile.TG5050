@@ -7,8 +7,7 @@
 # differ. NextUI ships tg5050 as its own platform with its own cross toolchain
 # (gcc 10.3) and SDK sysroot, so the tg5040 binary is not reusable here.
 #
-# Install the toolchain with tools/setup-toolchain.sh --tg5050, or point DEVKIT
-# at your own copy:
+# Unpack the tg5050 toolchain and sysroot into DEVKIT, or point it elsewhere:
 #
 #   make PLATFORM=TG5050 DEVKIT=/path/to/tg5050/aarch64-nextui-linux-gnu
 #---------------------------------------------------------------------------------
@@ -23,9 +22,11 @@ DEFINES := \
 	-D_NO_JACK_ \
 	-DSDL2 \
 	-DSDLAUDIO \
-	-DDUMMYMIDI
+	-DDUMMYMIDI \
+	-DAPPWINDOW_MAX_COLS=64 \
+	-DAPPWINDOW_MAX_ROWS=48
 
-DEVKIT ?= $(HOME)/GitSSD/lgpt-brick/toolchain/tg5050/aarch64-nextui-linux-gnu
+DEVKIT ?= /opt/tg5050-nextui-toolchain
 TRIPLET := aarch64-nextui-linux-gnu
 CROSS_COMPILE := $(DEVKIT)/bin/$(TRIPLET)-
 
